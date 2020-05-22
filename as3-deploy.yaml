@@ -1,0 +1,40 @@
+---
+- name: MY PLAYBOOK
+  hosts: bigips
+  connection: local
+  gather_facts: no
+
+  vars:
+    uri_method: POST
+
+  vars_files:
+  - ../creds/bigip_cred.yaml
+
+  tasks:
+  - name: AS3 Deploy
+    uri:
+      url: "https://{{inventory_hostname}}/mgmt/shared/appsvcs/declare/"
+      user: "{{bigip_user}}"
+      password: "{{bigip_pass}}"
+      method: "{{uri_method}}"
+      body: "{{ lookup('file','as3_declaration.json') }}"
+      force_basic_auth: yes
+      status_code:
+        - 200
+        - 204
+      body_format: json
+      validate_certs: no    
+    retries: 30
+    delay: 5
+    register: as3_response
+    until: ('status' in as3_response and (as3_response.status == 200 or as3_response.status == 204))
+    changed_when: false
+
+  - name: DEBUG AS3 OUTPUT
+    debug: 
+      msg: "{{as3_response}}"
+
+  - name: DEBUG AS3 OUTPUT2
+    debug: 
+      msg: "{{as3_response.json.declaration.RobertH.A1}}"
+...
